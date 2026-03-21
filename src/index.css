@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-white text-black font-sans antialiased min-h-screen;
+  }
+}
+
+@layer components {
+  /* Primary Red Button */
+  .btn-primary {
+    @apply px-8 py-3 rounded-full bg-[#FF0000] text-white font-bold tracking-wide hover:bg-[#CC0000] transition-colors focus:outline-none disabled:opacity-50 disabled:bg-[#e5e5e5] disabled:text-[#999999];
+  }
+
+  /* Secondary Gray Button */
+  .btn-secondary {
+    @apply px-8 py-3 rounded-full bg-[#e5e5e5] text-black font-bold tracking-wide hover:bg-[#d4d4d4] transition-colors focus:outline-none;
+  }
+
+  /* Input fields */
+  .input-field {
+    @apply w-full px-6 py-4 bg-white border-2 border-slate-300 rounded-full focus:border-[#FF0000] focus:ring-0 text-black placeholder-slate-400 outline-none transition-colors;
+  }
+  
+  /* Tag chips */
+  .tag-chip {
+    @apply inline-flex items-center px-4 py-1.5 bg-[#333333] text-white rounded-md text-sm font-medium;
+  }
+  
+  .tag-chip-light {
+    @apply inline-flex items-center px-4 py-1.5 bg-white border border-[#e5e5e5] text-black rounded-md text-sm font-medium;
+  }
+
+  /* Layout wrappers */
+  .page-container {
+    @apply w-full max-w-5xl mx-auto px-4 py-12;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
