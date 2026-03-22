@@ -91,7 +91,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen relative font-sans overflow-x-hidden p-4 md:p-8 bg-white text-black">
+    <div className="min-h-screen relative font-sans overflow-x-hidden p-4 md:p-8 bg-white text-black flex-1">
       {/* Header */}
       <header className="flex justify-between items-center max-w-6xl mx-auto z-20 relative mb-12">
         <h1 
@@ -111,7 +111,7 @@ function App() {
       </header>
 
       {/* Main Content Area */}
-      <main className="max-w-6xl mx-auto relative z-10 w-full flex flex-col items-center">
+      <main className="max-w-6xl mx-auto relative z-10 w-full flex flex-col items-center flex-1 justify-center">
         
         {step === 1 && (
           <URLInput onSongFound={handleSongFound} onSkipToTags={handleSkipToTags} />
@@ -122,7 +122,7 @@ function App() {
             <URLInput currentUrl={seedSong.fullUrl} />
             <SongCard song={seedSong} tagsData={tags} />
             <div className="mt-12">
-               <button onClick={() => setStep(3)} className="btn-primary w-48 shadow-md">CONFIRM SONG</button>
+               <button onClick={() => setStep(3)} className="btn-primary">CONFIRM SONG</button>
             </div>
           </div>
         )}

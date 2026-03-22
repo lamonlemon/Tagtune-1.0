@@ -10,10 +10,17 @@ export default function PlaylistResult({ recommendations, seedSong, onRestart, t
     setIsPushing(true);
     setError(null);
     try {
+      // Extract video IDs from URLs on the frontend for reliability
+      const extractId = (urlStr) => {
+        try {
+          const u = new URL(urlStr);
+          return u.searchParams.get('v') || u.pathname.slice(1);
+        } catch { return urlStr; }
+      };
       const payload = {
         title: `TagTune: ${seedSong?.title || 'Custom Playlist'} Recommendations`,
         description: `Generated based on tags!`,
-        video_ids: recommendations.map(s => s.url)
+        video_ids: recommendations.map(s => extractId(s.url)).filter(Boolean)
       };
       
       const res = await api.post('/api/playlist/push', payload);
@@ -31,38 +38,37 @@ export default function PlaylistResult({ recommendations, seedSong, onRestart, t
     if (!tagsData) return null;
     const tagsToRender = [];
 
-    if (tagsData.genres && song.song_genres) {
-      const g = song.song_genres;
-      const primary = tagsData.genres.find(x => x.genre_id === g.primary_genre_id)?.name;
-      const sub = tagsData.genres.find(x => x.genre_id === g.sub_genre_id)?.name;
-      const micro = tagsData.genres.find(x => x.genre_id === g.micro_genre_id)?.name;
-      if (primary) tagsToRender.push(<span key={`pg-${primary}`} className="tag-chip text-xs py-0.5">{primary}</span>);
-      if (sub) tagsToRender.push(<span key={`sg-${sub}`} className="tag-chip text-xs py-0.5">{sub}</span>);
-      if (micro) tagsToRender.push(<span key={`mg-${micro}`} className="tag-chip text-xs py-0.5">{micro}</span>);
+    if (tagsData?.genres) {
+      const primary = tagsData.genres.find(x => x.genre_id === song.song_primary_genres)?.name;
+      const sub = tagsData.genres.find(x => x.genre_id === song.song_sub_genres)?.name;
+      const micro = tagsData.genres.find(x => x.genre_id === song.song_micro_genres)?.name;
+      if (primary) tagsToRender.push(<span key={`pg-${primary}`} className="tag-chip tag-chip border-red-500 text-red-600 bg-red-50">Primary Genre: {primary}</span>);
+      if (sub) tagsToRender.push(<span key={`sg-${sub}`} className="tag-chip tag-chip border-red-500 text-red-600 bg-red-50">Sub Genre: {sub}</span>);
+      if (micro) tagsToRender.push(<span key={`mg-${micro}`} className="tag-chip tag-chip border-red-500 text-red-600 bg-red-50">Micro Genre: {micro}</span>);
     }
 
-    if (tagsData.groups && song.group_id) {
-      const group = tagsData.groups.find(x => x.group_id === song.group_id)?.name;
-      if (group) tagsToRender.push(<span key={`grp-${group}`} className="tag-chip text-xs py-0.5 border-red-500 text-red-600 bg-red-50">Group: {group}</span>);
-    }
-
-    if (tagsData.artists) {
+    if (tagsData?.artists) {
       const mainArt = tagsData.artists.find(x => x.artist_id === song.artist_id)?.name;
-      if (mainArt) tagsToRender.push(<span key={`art-${mainArt}`} className="tag-chip text-xs py-0.5 border-blue-500 text-blue-600 bg-blue-50">Artist: {mainArt}</span>);
+      if (mainArt) tagsToRender.push(<span key={`art-${mainArt}`} className="tag-chip border-blue-500 text-blue-600 bg-blue-50">Artist: {mainArt}</span>);
       
       song.song_featuring?.forEach(f => {
         const feat = tagsData.artists.find(x => x.artist_id === f.artist_id)?.name;
-        if (feat) tagsToRender.push(<span key={`feat-${feat}`} className="tag-chip text-xs py-0.5 border-purple-500 text-purple-600 bg-purple-50">Feat: {feat}</span>);
+        if (feat) tagsToRender.push(<span key={`feat-${feat}`} className="tag-chip border-purple-500 text-purple-600 bg-purple-50">Feat: {feat}</span>);
       });
       
       song.song_producers?.forEach(p => {
         const prod = tagsData.artists.find(x => x.artist_id === p.artist_id)?.name;
-        if (prod) tagsToRender.push(<span key={`prod-${prod}`} className="tag-chip text-xs py-0.5 border-green-500 text-green-600 bg-green-50">Prod: {prod}</span>);
+        if (prod) tagsToRender.push(<span key={`prod-${prod}`} className="tag-chip border-green-500 text-green-600 bg-green-50">Prod: {prod}</span>);
       });
     }
 
-    if (song.is_cover) tagsToRender.push(<span key="cover" className="tag-chip text-xs py-0.5">Cover</span>);
-    if (song.language) tagsToRender.push(<span key="lang" className="tag-chip text-xs py-0.5">{song.language}</span>);
+    if (tagsData?.groups && song.group_id) {
+      const group = tagsData.groups.find(x => x.group_id === song.group_id)?.name;
+      if (group) tagsToRender.push(<span key={`grp-${group}`} className="tag-chip border-orange-500 text-orange-600 bg-orange-50">Group: {group}</span>);
+    }
+    
+    if (song.is_cover) tagsToRender.push(<span key={`cover`} className="tag-chip border-gray-500 text-gray-600 bg-gray-50">Cover</span>);
+    if (song.language) tagsToRender.push(<span key={`language-${song.language}`} className="tag-chip border-yellow-500 text-yellow-600 bg-yellow-50">Language: {song.language}</span>);
 
     return tagsToRender;
   };
@@ -83,7 +89,7 @@ export default function PlaylistResult({ recommendations, seedSong, onRestart, t
           <button 
             onClick={handlePush} 
             disabled={isPushing} 
-            className="btn-primary shadow-md min-w-[280px]"
+            className="btn-primary min-w-[280px]"
           >
             {isPushing ? "CREATING..." : "PUT IT INTO YOUR PLAYLIST"}
           </button>
@@ -99,12 +105,12 @@ export default function PlaylistResult({ recommendations, seedSong, onRestart, t
           <div key={idx} className="flex flex-col sm:flex-row gap-6 items-start">
              {/* Thumbnail */}
              <div className="w-[200px] h-[120px] bg-[#e5e5e5] flex-shrink-0 flex items-center justify-center overflow-hidden rounded-sm relative">
-                <img src={`https://img.youtube.com/vi/${song.url}/hqdefault.jpg`} className="w-full h-full object-cover opacity-80 mix-blend-multiply" alt=""/>
+                
                 <span className="absolute top-2 left-2 bg-black text-white text-xs font-bold px-2 py-1 rounded">{idx + 1}</span>
              </div>
              <div className="flex flex-col justify-center py-2 gap-1">
                 <h3 className="text-xl font-bold uppercase">{song.title}</h3>
-                <p className="text-sm text-gray-500 mb-1">{`https://music.youtube.com/watch?v=${song.url}`}</p>
+                <p className="text-sm text-gray-500 mb-1">{song.url}</p>
                 <div className="flex flex-wrap gap-1.5 mt-1">
                   {renderTags(song)}
                 </div>

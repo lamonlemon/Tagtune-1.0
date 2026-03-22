@@ -38,7 +38,9 @@ router.post('/push', async (req, res) => {
 
     const playlistId = playlistResponse.data.id;
 
-    // 2. Insert items sequentially
+    // 2. Insert items sequentially, tracking success/failures
+    let inserted = 0;
+    let skipped = [];
     for (const urlOrId of video_ids) {
       if (!urlOrId) continue;
       
@@ -49,6 +51,7 @@ router.post('/push', async (req, res) => {
           videoId = urlObj.searchParams.get('v') || urlObj.pathname.slice(1);
         } catch (e) {
           console.warn('Could not parse URL:', urlOrId);
+          skipped.push({ id: urlOrId, reason: 'Invalid URL' });
           continue;
         }
       }
@@ -66,13 +69,17 @@ router.post('/push', async (req, res) => {
             }
           }
         });
+        inserted++;
       } catch (insertErr) {
-        console.warn(`Skipping unable to insert video ${videoId}:`, insertErr.message);
+        const reason = insertErr.errors?.[0]?.reason || insertErr.message || 'Unknown error';
+        console.warn(`Skipping video ${videoId}: ${reason}`);
+        skipped.push({ id: videoId, reason });
       }
     }
 
+    console.log(`Playlist created: ${inserted}/${video_ids.length} songs added, ${skipped.length} skipped`);
     const playlistUrl = `https://music.youtube.com/playlist?list=${playlistId}`;
-    res.json({ playlist_url: playlistUrl });
+    res.json({ playlist_url: playlistUrl, inserted, skipped: skipped.length, skipped_details: skipped });
   } catch (err) {
     console.error('Error creating YouTube playlist:', err);
     if (err.code === 401 || (err.errors && err.errors[0]?.reason === 'authError')) {

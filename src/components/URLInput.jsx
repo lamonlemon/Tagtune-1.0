@@ -49,7 +49,7 @@ export default function URLInput({ onSongFound, onSkipToTags, currentUrl = '' })
   const isValidUrl = url.trim().length > 0;
 
   return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col items-center animate-fade-in relative z-10 pt-10">
+    <div className="w-full max-w-2xl mx-auto flex flex-col items-center animate-fade-in relative z-10">
       
       <form onSubmit={handleMakePlaylist} className="w-full flex flex-col sm:flex-row gap-4 items-center justify-center relative">
         <div className="relative w-full sm:w-[500px]">
@@ -61,7 +61,7 @@ export default function URLInput({ onSongFound, onSkipToTags, currentUrl = '' })
           <input 
             type="text" 
             placeholder="Paste Youtube Music Link" 
-            className="input-field pl-12 shadow-sm w-full"
+            className="input-field pl-12 w-full"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
           />
@@ -70,7 +70,7 @@ export default function URLInput({ onSongFound, onSkipToTags, currentUrl = '' })
         <button 
           type="submit" 
           disabled={loading || !isValidUrl}
-          className={`${isValidUrl ? 'btn-primary' : 'btn-secondary'} whitespace-nowrap min-w-[120px] shadow-sm`}
+          className={`${isValidUrl ? 'btn-primary' : 'btn-secondary'} whitespace-nowrap min-w-[120px]`}
         >
           {loading ? "..." : "MAKE"}
         </button>
@@ -84,12 +84,16 @@ export default function URLInput({ onSongFound, onSkipToTags, currentUrl = '' })
 
       {/* Only show OR block if we are rendering for step 1 (where we pass onSkipToTags natively) */}
       {onSkipToTags && (
-        <div className="flex flex-col items-center mt-12 w-full">
-          <span className="text-3xl font-bold mb-8">OR</span>
+        <div className="flex flex-col items-center w-full">
+          <div className="flex items-center justify-center w-full max-w-md my-12">
+            <div className="h-[1px] bg-gray-200 flex-1"></div>
+            <span className="px-6 text-sm text-gray-400 font-medium tracking-widest uppercase">Or</span>
+            <div className="h-[1px] bg-gray-200 flex-1"></div>
+          </div>
           <button 
             type="button"
             onClick={onSkipToTags}
-            className="btn-primary"
+            className="px-8 py-3 rounded-full border-2 border-[#e5e5e5] text-black hover:border-black font-bold tracking-wide transition-colors focus:outline-none"
           >
             START WITH SELECTING TAG
           </button>

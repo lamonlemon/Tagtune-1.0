@@ -11,14 +11,9 @@ export default function SongCard({ song, tagsData }) {
       const primary = tagsData.genres.find(x => x.genre_id === song.primary_genre_id)?.name;
       const sub = tagsData.genres.find(x => x.genre_id === song.sub_genre_id)?.name;
       const micro = tagsData.genres.find(x => x.genre_id === song.micro_genre_id)?.name;
-      if (primary) tagsToRender.push(<span key={`pg-${primary}`} className="tag-chip">{primary}</span>);
-      if (sub) tagsToRender.push(<span key={`sg-${sub}`} className="tag-chip">{sub}</span>);
-      if (micro) tagsToRender.push(<span key={`mg-${micro}`} className="tag-chip">{micro}</span>);
-    }
-
-    if (tagsData?.groups && song.group_id) {
-      const group = tagsData.groups.find(x => x.group_id === song.group_id)?.name;
-      if (group) tagsToRender.push(<span key={`grp-${group}`} className="tag-chip border-red-500 text-red-600 bg-red-50">Group: {group}</span>);
+      if (primary) tagsToRender.push(<span key={`pg-${primary}`} className="tag-chip tag-chip border-red-500 text-red-600 bg-red-50">Primary Genre: {primary}</span>);
+      if (sub) tagsToRender.push(<span key={`sg-${sub}`} className="tag-chip tag-chip border-red-500 text-red-600 bg-red-50">Sub Genre: {sub}</span>);
+      if (micro) tagsToRender.push(<span key={`mg-${micro}`} className="tag-chip tag-chip border-red-500 text-red-600 bg-red-50">Micro Genre: {micro}</span>);
     }
 
     if (tagsData?.artists) {
@@ -35,6 +30,14 @@ export default function SongCard({ song, tagsData }) {
         if (prod) tagsToRender.push(<span key={`prod-${prod}`} className="tag-chip border-green-500 text-green-600 bg-green-50">Prod: {prod}</span>);
       });
     }
+
+    if (tagsData?.groups && song.group_id) {
+      const group = tagsData.groups.find(x => x.group_id === song.group_id)?.name;
+      if (group) tagsToRender.push(<span key={`grp-${group}`} className="tag-chip border-orange-500 text-orange-600 bg-orange-50">Group: {group}</span>);
+    }
+    
+    if (song.is_cover) tagsToRender.push(<span key={`cover`} className="tag-chip border-gray-500 text-gray-600 bg-gray-50">Cover</span>);
+    if (song.language) tagsToRender.push(<span key={`language-${song.language}`} className="tag-chip border-yellow-500 text-yellow-600 bg-yellow-50">Language: {song.language}</span>);
 
     return tagsToRender;
   };
@@ -56,12 +59,6 @@ export default function SongCard({ song, tagsData }) {
         
         <div className="flex flex-wrap gap-2 mt-4">
            {renderTags()}
-           {song.is_cover && (
-             <span className="tag-chip">Cover</span>
-           )}
-           {song.language && (
-             <span className="tag-chip">{song.language}</span>
-           )}
         </div>
       </div>
     </div>
