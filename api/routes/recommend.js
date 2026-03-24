@@ -223,19 +223,18 @@ router.post('/', async (req, res) => {
     let poolForDedup;
 
     if (primaryGenreIds.length > 1) {
-      // Split proportionally: each genre gets an equal share of the top slots
-      const perGenre = Math.ceil(50 / primaryGenreIds.length);
+      // Split proportionally: collect all songs into their genre buckets
       const genreBuckets = {};
       primaryGenreIds.forEach(gid => { genreBuckets[gid] = []; });
 
       for (const song of scoredCandidates) {
         const gid = song.primary_genre_id;
-        if (genreBuckets[gid] && genreBuckets[gid].length < perGenre) {
+        if (genreBuckets[gid]) {
           genreBuckets[gid].push(song);
         }
       }
 
-      // Interleave genres for variety
+      // Interleave genres for variety (proportionally among available)
       const merged = [];
       let maxLen = Math.max(...Object.values(genreBuckets).map(b => b.length));
       for (let i = 0; i < maxLen; i++) {
@@ -243,9 +242,9 @@ router.post('/', async (req, res) => {
           if (genreBuckets[gid][i]) merged.push(genreBuckets[gid][i]);
         }
       }
-      poolForDedup = merged.slice(0, 50);
+      poolForDedup = merged;
     } else {
-      poolForDedup = scoredCandidates.slice(0, 50);
+      poolForDedup = scoredCandidates;
     }
 
     // Shuffle if regenerate
@@ -261,13 +260,16 @@ router.post('/', async (req, res) => {
     for (let song of poolForDedup) {
       if (finalSelection.length >= count) break;
       
-      artistCounts[song.artist_name] = (artistCounts[song.artist_name] || 0) + 1;
-      if (song.album_id) {
-        albumCounts[song.album_id] = (albumCounts[song.album_id] || 0) + 1;
-      }
+      const currentArtistCount = artistCounts[song.artist_name] || 0;
+      const currentAlbumCount = song.album_id ? (albumCounts[song.album_id] || 0) : 0;
 
-      if (artistCounts[song.artist_name] > 2) continue;
-      if (song.album_id && albumCounts[song.album_id] > 2) continue;
+      if (currentArtistCount >= 2) continue;
+      if (song.album_id && currentAlbumCount >= 2) continue;
+
+      artistCounts[song.artist_name] = currentArtistCount + 1;
+      if (song.album_id) {
+        albumCounts[song.album_id] = currentAlbumCount + 1;
+      }
 
       finalSelection.push(song);
     }
