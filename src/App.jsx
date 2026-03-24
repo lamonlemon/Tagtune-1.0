@@ -130,7 +130,10 @@ function App() {
         {step === 3 && (
           <div className="w-full flex flex-col items-center">
             <div className="mb-4 w-full">
-              <URLInput currentUrl={seedSong ? seedSong.fullUrl : ''} />
+              <URLInput currentUrl={seedSong ? seedSong.fullUrl : ''} onSongFound={(songData, url) => {
+                setSeedSong({ ...songData, fullUrl: url });
+                setStep(2);
+              }} />
             </div>
             <TagSelector initialTags={seedSong || {}} onGenerate={handleGenerate} tagsData={tags} />
           </div>
