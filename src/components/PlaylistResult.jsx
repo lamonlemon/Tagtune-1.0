@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
 import api from '../api';
+// Helper to extract video ID from YouTube/YouTube Music URLs
+const extractId = (urlStr) => {
+  try {
+    const u = new URL(urlStr);
+    return u.searchParams.get('v') || u.pathname.slice(1);
+  } catch { return urlStr; }
+};
 
 export default function PlaylistResult({ recommendations, seedSong, onRestart, tagsData }) {
   const [isPushing, setIsPushing] = useState(false);
@@ -10,13 +17,6 @@ export default function PlaylistResult({ recommendations, seedSong, onRestart, t
     setIsPushing(true);
     setError(null);
     try {
-      // Extract video IDs from URLs on the frontend for reliability
-      const extractId = (urlStr) => {
-        try {
-          const u = new URL(urlStr);
-          return u.searchParams.get('v') || u.pathname.slice(1);
-        } catch { return urlStr; }
-      };
       const payload = {
         title: `TagTune: ${seedSong?.title || 'Custom Playlist'} Recommendations`,
         description: `Generated based on tags!`,
@@ -105,7 +105,7 @@ export default function PlaylistResult({ recommendations, seedSong, onRestart, t
           <div key={idx} className="flex flex-col sm:flex-row gap-6 items-start">
              {/* Thumbnail */}
              <div className="w-[200px] h-[120px] bg-[#e5e5e5] flex-shrink-0 flex items-center justify-center overflow-hidden rounded-sm relative">
-                
+                <img src={`https://img.youtube.com/vi/${extractId(song.url)}/hqdefault.jpg`} alt={song.title} className="w-full h-full object-cover"></img>
                 <span className="absolute top-2 left-2 bg-black text-white text-xs font-bold px-2 py-1 rounded">{idx + 1}</span>
              </div>
              <div className="flex flex-col justify-center py-2 gap-1">
