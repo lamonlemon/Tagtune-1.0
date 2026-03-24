@@ -5,6 +5,7 @@ export default function TagSelector({ initialTags, onGenerate, tagsData = { genr
   const [secondaryTags, setSecondaryTags] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [maxSongs, setMaxSongs] = useState(25);
+  const [dragOverTarget, setDragOverTarget] = useState(null);
 
   const removeTag = (tag, listType) => {
     if (listType === 'primary') setPrimaryTags(prev => prev.filter(t => t.id !== tag.id));
@@ -14,6 +15,38 @@ export default function TagSelector({ initialTags, onGenerate, tagsData = { genr
   const addTag = (tag, listType) => {
     if (listType === 'primary') setPrimaryTags(prev => [...prev, tag]);
     if (listType === 'secondary') setSecondaryTags(prev => [...prev, tag]);
+  };
+
+  // Drag and drop: move tag between primary <-> secondary
+  const moveTag = (tag, fromList, toList) => {
+    if (fromList === 'primary' && toList === 'secondary') {
+      setPrimaryTags(prev => prev.filter(t => t.id !== tag.id));
+      setSecondaryTags(prev => [...prev, tag]);
+    } else if (fromList === 'secondary' && toList === 'primary') {
+      setSecondaryTags(prev => prev.filter(t => t.id !== tag.id));
+      setPrimaryTags(prev => [...prev, tag]);
+    }
+  };
+
+  const handleDragStart = (e, tag, source) => {
+    e.dataTransfer.setData('application/json', JSON.stringify({ tag, source }));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e, targetList) => {
+    e.preventDefault();
+    setDragOverTarget(null);
+    try {
+      const { tag, source } = JSON.parse(e.dataTransfer.getData('application/json'));
+      if (source !== targetList) {
+        moveTag(tag, source, targetList);
+      }
+    } catch {}
   };
 
   const allTags = useMemo(() => {
@@ -104,6 +137,15 @@ export default function TagSelector({ initialTags, onGenerate, tagsData = { genr
       }
       return true;
     });
+    // Sort exact name matches to the top
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered.sort((a, b) => {
+        const aExact = a.name.toLowerCase() === term ? 0 : 1;
+        const bExact = b.name.toLowerCase() === term ? 0 : 1;
+        return aExact - bExact;
+      });
+    }
     // Slice Top 50 for max performance when typing
     return filtered.slice(0, 50);
   }, [allTags, primaryTags, secondaryTags, searchTerm]);
@@ -146,25 +188,10 @@ export default function TagSelector({ initialTags, onGenerate, tagsData = { genr
   return (
     <div className="w-full flex justify-center pb-10">
       <div className="w-full max-w-5xl">
-         {/* Top bar with button and slider */}
-         <div className="flex flex-col sm:flex-row items-center justify-between mb-6 px-4 lg:px-0 gap-4">
-           <div className="flex flex-col w-full sm:w-64">
-             <div className="flex justify-between items-center mb-2">
-               <span className="text-sm font-bold uppercase text-gray-500">Playlist Size: {maxSongs}</span>
-             </div>
-             <input
-               type="range"
-               min="10"
-               max="50"
-               step="5"
-               value={maxSongs}
-               onChange={(e) => setMaxSongs(parseInt(e.target.value))}
-               className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-500"
-             />
-           </div>
-           
-           <button onClick={handleNext} className="btn-primary w-full sm:w-32 h-12 py-2 text-sm z-50">
-             GENERATE {maxSongs} SONGS
+         {/* Top bar with button */}
+         <div className="flex justify-end mb-4 px-4 lg:px-0">
+           <button onClick={handleNext} className="btn-primary w-full sm:w-32 h-12 py-2 text-sm z-50 flex items-center justify-center">
+             GENERATE
            </button>
          </div>
 
@@ -174,9 +201,14 @@ export default function TagSelector({ initialTags, onGenerate, tagsData = { genr
               
               <div>
                 <h3 className="text-xl font-bold mb-2">Primary tag</h3>
-                <div className="w-full min-h-[150px] bg-[#e5e5e5] rounded-3xl p-4 flex flex-wrap gap-2 items-start content-start">
+                <div 
+                   className={`w-full min-h-[150px] bg-[#e5e5e5] rounded-3xl p-4 flex flex-wrap gap-2 items-start content-start transition-all ${dragOverTarget === 'primary' ? 'ring-2 ring-red-400 bg-red-50' : ''}`}
+                   onDragOver={(e) => { handleDragOver(e); setDragOverTarget('primary'); }}
+                   onDragLeave={() => setDragOverTarget(null)}
+                   onDrop={(e) => handleDrop(e, 'primary')}
+                >
                    {primaryTags.map(tag => (
-                     <div key={`primary-${tag.id}`} className="tag-chip-light flex items-center gap-1 shadow-sm">
+                     <div key={`primary-${tag.id}`} className="tag-chip-light rounded-full flex items-center gap-1 cursor-grab active:cursor-grabbing" draggable onDragStart={(e) => handleDragStart(e, tag, 'primary')}>
                        {tag.type}: {tag.name} 
                        <button onClick={() => removeTag(tag, 'primary')} className="p-1 px-2 -mr-2 text-gray-500 hover:text-black focus:outline-none rounded-full hover:bg-gray-100 transition-colors">
                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -189,9 +221,14 @@ export default function TagSelector({ initialTags, onGenerate, tagsData = { genr
 
               <div>
                 <h3 className="text-xl font-bold mb-2">Secondary tag</h3>
-                <div className="w-full min-h-[150px] bg-[#e5e5e5] rounded-3xl p-4 flex flex-wrap gap-2 items-start content-start">
+                <div 
+                   className={`w-full min-h-[150px] bg-[#e5e5e5] rounded-3xl p-4 flex flex-wrap gap-2 items-start content-start transition-all ${dragOverTarget === 'secondary' ? 'ring-2 ring-red-400 bg-red-50' : ''}`}
+                   onDragOver={(e) => { handleDragOver(e); setDragOverTarget('secondary'); }}
+                   onDragLeave={() => setDragOverTarget(null)}
+                   onDrop={(e) => handleDrop(e, 'secondary')}
+                >
                   {secondaryTags.map(tag => (
-                     <div key={`secondary-${tag.id}`} className="tag-chip-light flex items-center gap-1 shadow-sm">
+                     <div key={`secondary-${tag.id}`} className="tag-chip-light rounded-full flex items-center gap-1 cursor-grab active:cursor-grabbing" draggable onDragStart={(e) => handleDragStart(e, tag, 'secondary')}>
                        {tag.type}: {tag.name} 
                        <button onClick={() => removeTag(tag, 'secondary')} className="p-1 px-2 -mr-2 text-gray-500 hover:text-black focus:outline-none rounded-full hover:bg-gray-100 transition-colors">
                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -200,13 +237,29 @@ export default function TagSelector({ initialTags, onGenerate, tagsData = { genr
                    ))}
                    {secondaryTags.length === 0 && <span className="text-gray-400 text-sm mt-1">No secondary tags selected</span>}
                 </div>
+                
+                {/* Playlist Size Slider */}
+                <div className="mt-4 px-1">
+                   <div className="flex justify-between items-center mb-1">
+                     <span className="text-l font-bold uppercase text-gray-400">Playlist Size: {maxSongs}</span>
+                   </div>
+                   <input
+                     type="range"
+                     min="10"
+                     max="50"
+                     step="5"
+                     value={maxSongs}
+                     onChange={(e) => setMaxSongs(parseInt(e.target.value))}
+                     className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-500"
+                   />
+                </div>
               </div>
            </div>
 
            {/* Right Column */}
            <div className="flex-1 flex flex-col">
               <h3 className="text-xl font-bold mb-2">Tags</h3>
-              <div className="w-full flex-grow border-2 border-[#e5e5e5] rounded-xl p-4 flex flex-col gap-3 max-h-[430px]">
+              <div className="w-full flex-grow border-2 border-[#e5e5e5] rounded-3xl p-4 flex flex-col gap-3 max-h-[430px]">
                  
                  {/* Search */}
                  <div className="relative">
