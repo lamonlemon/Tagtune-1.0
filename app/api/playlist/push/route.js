@@ -1,24 +1,24 @@
-import express from 'express';
+import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
+import { auth } from "@/auth";
 
-const router = express.Router();
-
-router.post('/push', async (req, res) => {
+export async function POST(request) {
   try {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: 'Not authenticated with Google' });
+    const session = await auth();
+    if (!session || !session.accessToken) {
+      return NextResponse.json({ error: 'Not authenticated with Google' }, { status: 401 });
     }
 
-    const { title, video_ids } = req.body;
+    const body = await request.json();
+    const title = body.title || body.playlist_title;
+    const video_ids = body.video_ids || body.song_urls;
     
     if (!video_ids || video_ids.length === 0) {
-      return res.status(400).json({ error: 'No songs provided' });
+      return NextResponse.json({ error: 'No songs provided' }, { status: 400 });
     }
 
-    const { youtube_access_token } = req.user;
-
     const oauth2Client = new google.auth.OAuth2();
-    oauth2Client.setCredentials({ access_token: youtube_access_token });
+    oauth2Client.setCredentials({ access_token: session.accessToken });
 
     const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
 
@@ -38,7 +38,7 @@ router.post('/push', async (req, res) => {
 
     const playlistId = playlistResponse.data.id;
 
-    // 2. Insert items sequentially, tracking success/failures
+    // 2. Insert items sequentially
     let inserted = 0;
     let skipped = [];
     for (const urlOrId of video_ids) {
@@ -48,9 +48,8 @@ router.post('/push', async (req, res) => {
       if (urlOrId.includes('http')) {
         try {
           const urlObj = new URL(urlOrId);
-          videoId = urlObj.searchParams.get('v') || urlObj.pathname.slice(1);
+          videoId = urlObj.searchParams.get('v') || urlObj.pathname.split('/').pop();
         } catch (e) {
-          console.warn('Could not parse URL:', urlOrId);
           skipped.push({ id: urlOrId, reason: 'Invalid URL' });
           continue;
         }
@@ -72,21 +71,17 @@ router.post('/push', async (req, res) => {
         inserted++;
       } catch (insertErr) {
         const reason = insertErr.errors?.[0]?.reason || insertErr.message || 'Unknown error';
-        console.warn(`Skipping video ${videoId}: ${reason}`);
         skipped.push({ id: videoId, reason });
       }
     }
 
-    console.log(`Playlist created: ${inserted}/${video_ids.length} songs added, ${skipped.length} skipped`);
     const playlistUrl = `https://music.youtube.com/playlist?list=${playlistId}`;
-    res.json({ playlist_url: playlistUrl, inserted, skipped: skipped.length, skipped_details: skipped });
+    return NextResponse.json({ playlist_url: playlistUrl, inserted, skipped: skipped.length, skipped_details: skipped });
   } catch (err) {
     console.error('Error creating YouTube playlist:', err);
     if (err.code === 401 || (err.errors && err.errors[0]?.reason === 'authError')) {
-      return res.status(401).json({ error: 'YouTube token expired. Please login again.' });
+      return NextResponse.json({ error: 'YouTube token expired. Please login again.' }, { status: 401 });
     }
-    res.status(500).json({ error: 'Failed to push playlist to YouTube' });
+    return NextResponse.json({ error: 'Failed to push playlist to YouTube' }, { status: 500 });
   }
-});
-
-export default router;
+}

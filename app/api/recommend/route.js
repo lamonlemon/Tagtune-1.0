@@ -1,7 +1,6 @@
-import express from 'express';
-import { supabase } from '../db.js';
-
-const router = express.Router();
+import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
+import { auth } from "@/auth";
 
 // Fisher-Yates shuffle
 function shuffle(arr) {
@@ -13,15 +12,20 @@ function shuffle(arr) {
   return a;
 }
 
-router.post('/', async (req, res) => {
+export async function POST(request) {
   try {
+    const session = await auth();
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { 
       seed_song_index, 
       primary_tags = {},
       secondary_tags = {},
       count = 20, 
       regenerate = false
-    } = req.body;
+    } = await request.json();
 
     // Helper: check if array has values
     const has = (arr) => Array.isArray(arr) && arr.length > 0;
@@ -35,7 +39,6 @@ router.post('/', async (req, res) => {
     ];
     const isGenreInner = allGenreIds.length > 0;
 
-    // Step 1: Hard filters using Supabase query
     let query = supabase
       .from('songs')
       .select(`
@@ -48,7 +51,6 @@ router.post('/', async (req, res) => {
         )
       `);
       
-    // Applying primary_tags as hard filters (arrays → .in() for OR, scalars → .eq())
     if (has(primary_tags.primary_genre_ids)) {
       query = query.in('song_genres.primary_genre_id', primary_tags.primary_genre_ids);
     }
@@ -87,10 +89,9 @@ router.post('/', async (req, res) => {
 
     if (filterError) {
       console.error('Error querying DB:', filterError);
-      return res.status(500).json({ error: 'Database error' });
+      return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
-    // Filter cover/original strictly in JS to fix self-reference edge case
     let candidates = filterResults.filter(s => {
       const isCover = s.original_song_id !== null && s.original_song_id !== s.song_index;
       if (primary_tags.cover_filter === 'cover' && !isCover) return false;
@@ -98,10 +99,8 @@ router.post('/', async (req, res) => {
       return true;
     });
 
-    // 🎲 Randomize candidates BEFORE scoring for variety
     candidates = shuffle(candidates);
 
-    // We need the seed song to do the scoring
     let seedSong = null;
     if (seed_song_index) {
       const { data } = await supabase
@@ -115,12 +114,10 @@ router.post('/', async (req, res) => {
       seedSong = data;
     }
 
-    // Step 2: Scoring
     let scoredCandidates = candidates.map(s => {
       let score = 0;
       let reasons = [];
 
-      // Secondary Tags Scoring (arrays)
       if (has(secondary_tags.group_ids) && secondary_tags.group_ids.includes(s.group_id)) {
         score += 30;
         reasons.push('Group (User Tag)');
@@ -191,7 +188,6 @@ router.post('/', async (req, res) => {
 
       const isCover = s.original_song_id !== null && s.original_song_id !== s.song_index;
       if (isCover) reasons.push('Cover song');
-
       if (reasons.length === 0) reasons.push('Tag match');
 
       return {
@@ -215,15 +211,12 @@ router.post('/', async (req, res) => {
       };
     });
 
-    // Sort by score descending
     scoredCandidates.sort((a, b) => b.score - a.score);
 
-    // Step 3: Proportional pool splitting if multiple primary genres selected
     const primaryGenreIds = primary_tags.primary_genre_ids || [];
     let poolForDedup;
 
     if (primaryGenreIds.length > 1) {
-      // Split proportionally: collect all songs into their genre buckets
       const genreBuckets = {};
       primaryGenreIds.forEach(gid => { genreBuckets[gid] = []; });
 
@@ -234,7 +227,6 @@ router.post('/', async (req, res) => {
         }
       }
 
-      // Interleave genres for variety (proportionally among available)
       const merged = [];
       let maxLen = Math.max(...Object.values(genreBuckets).map(b => b.length));
       for (let i = 0; i < maxLen; i++) {
@@ -247,12 +239,10 @@ router.post('/', async (req, res) => {
       poolForDedup = scoredCandidates;
     }
 
-    // Shuffle if regenerate
     if (regenerate) {
        poolForDedup = shuffle(poolForDedup);
     }
 
-    // Deduplicate (max 2 per artist, max 2 per album)
     const artistCounts = {};
     const albumCounts = {};
     const finalSelection = [];
@@ -274,12 +264,10 @@ router.post('/', async (req, res) => {
       finalSelection.push(song);
     }
 
-    res.json(finalSelection);
+    return NextResponse.json(finalSelection);
 
   } catch (err) {
     console.error('Error generating recommendation:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-});
-
-export default router;
+}

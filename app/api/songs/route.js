@@ -1,20 +1,24 @@
-import express from 'express';
-import { supabase } from '../db.js';
+import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
+import { auth } from "@/auth"
 
-const router = express.Router();
-
-router.get('/', async (req, res) => {
+export async function GET(request) {
   try {
-    const { video_id } = req.query;
+    const session = await auth();
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const video_id = searchParams.get('video_id');
 
     if (!video_id) {
-      return res.status(400).json({ error: 'Missing video_id' });
+      return NextResponse.json({ error: 'Missing video_id' }, { status: 400 });
     }
 
     const targetUrl = `https://music.youtube.com/watch?v=${video_id}`;
-    const altTargetUrl = `https://youtube.com/watch?v=${video_id}`; // Just in case
+    const altTargetUrl = `https://youtube.com/watch?v=${video_id}`;
 
-    // Lookup song
     const { data: song, error: songError } = await supabase
       .from('songs')
       .select(`
@@ -31,15 +35,13 @@ router.get('/', async (req, res) => {
       .single();
 
     if (songError || !song) {
-      console.log('Song not found in DB:', video_id, songError);
-      return res.status(404).json({ error: 'Song not found in database. Please ask the user for another link.' });
+      return NextResponse.json({ error: 'Song not found in database. Please ask the user for another link.' }, { status: 404 });
     }
 
-    // Determine derived properties
     const is_cover = song.original_song_id !== null && song.original_song_id !== song.song_index;
     const { primary_genre_id, sub_genre_id, micro_genre_id } = song.song_genres || {};
 
-    res.json({
+    return NextResponse.json({
       song_index: song.song_index,
       title: song.title,
       artist_name: song.artists?.name || 'Unknown Artist',
@@ -57,8 +59,6 @@ router.get('/', async (req, res) => {
     });
   } catch (err) {
     console.error('Error fetching song:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-});
-
-export default router;
+}

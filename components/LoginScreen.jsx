@@ -1,8 +1,9 @@
 import React from 'react';
+import { signIn } from 'next-auth/react';
 
 export default function LoginScreen() {
   const handleLogin = () => {
-    window.location.href = 'http://localhost:3001/auth/google';
+    signIn('google');
   };
 
   return (

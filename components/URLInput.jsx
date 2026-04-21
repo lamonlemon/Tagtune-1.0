@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import api from '../api';
+import api from '@/lib/api';
 
 export default function URLInput({ onSongFound, onSkipToTags, currentUrl = '' }) {
   const [url, setUrl] = useState(currentUrl);

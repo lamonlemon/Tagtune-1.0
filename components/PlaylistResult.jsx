@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import api from '../api';
+import api from '@/lib/api';
 // Helper to extract video ID from YouTube/YouTube Music URLs
 const extractId = (urlStr) => {
   try {

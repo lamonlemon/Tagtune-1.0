@@ -1,39 +1,35 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
-import api from './api';
+import { useSession, signOut } from "next-auth/react";
+import api from '@/lib/api';
 
-import LoginScreen from './components/LoginScreen';
-import URLInput from './components/URLInput';
-import SongCard from './components/SongCard';
-import TagSelector from './components/TagSelector';
-import PlaylistResult from './components/PlaylistResult';
+import LoginScreen from '@/components/LoginScreen';
+import URLInput from '@/components/URLInput';
+import SongCard from '@/components/SongCard';
+import TagSelector from '@/components/TagSelector';
+import PlaylistResult from '@/components/PlaylistResult';
 
-function App() {
-  const [authStatus, setAuthStatus] = useState({ checked: false, authenticated: false, user: null });
+export default function App() {
+  const { data: session, status } = useSession();
   const [step, setStep] = useState(1); // 1: URL, 2: Tags, 3: Results
   
   const [seedSong, setSeedSong] = useState(null);
-  const [recommendations, setRecommendations] = useState([]); // Changed to empty array
+  const [recommendations, setRecommendations] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [tags, setTags] = useState({ genres: [], artists: [], groups: [] }); // Consolidated tags
+  const [tags, setTags] = useState({ genres: [], artists: [], groups: [] });
 
   useEffect(() => {
-    // Check auth status
-    api.get('/auth/status')
-      .then(res => setAuthStatus({ checked: true, ...res.data }))
-      .catch(err => setAuthStatus({ checked: true, authenticated: false }));
+    if (status === "authenticated") {
+      // Fetch tags once
+      api.get('/api/tags')
+        .then(res => setTags(res.data))
+        .catch(console.error);
+    }
+  }, [status]);
 
-    // Fetch tags once
-    api.get('/api/tags')
-      .then(res => setTags(res.data))
-      .catch(console.error);
-  }, []);
-
-  const handleLogout = async () => {
-    await api.post('/auth/logout');
-    setAuthStatus({ checked: true, authenticated: false, user: null });
-    setStep(1);
-    setSeedSong(null);
-    setRecommendations(null);
+  const handleLogout = () => {
+    signOut();
   };
 
   const handleSongFound = (songData, url) => {
@@ -43,7 +39,7 @@ function App() {
 
   const handleSkipToTags = () => {
     setSeedSong(null);
-    setStep(3); // Go straight to tags
+    setStep(3);
   };
 
   const handleGenerate = async (tags) => {
@@ -64,21 +60,7 @@ function App() {
     }
   };
 
-  const handleRegenerate = async () => {
-    setIsGenerating(true);
-    try {
-      // Re-use current tags but ask for regenerate from backend
-      // We don't have the exact tags stored in a top-level state easily, 
-      // but we can just go back to step 2 or ideally store tags in App state.
-      // For MVP, just going back to step 2 is easiest if they want to regenerate with different tags,
-      // OR we can pass `regenerate: true` if we saved `lastTags`. Let's just go back to Step 2 for simplicity.
-      setStep(2);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  if (!authStatus.checked) {
+  if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">
          <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
@@ -86,7 +68,7 @@ function App() {
     );
   }
 
-  if (!authStatus.authenticated) {
+  if (status === "unauthenticated") {
     return <LoginScreen />;
   }
 
@@ -96,13 +78,13 @@ function App() {
       <header className="flex justify-between items-center max-w-6xl mx-auto z-20 relative mb-12">
         <h1 
           className="text-3xl font-black cursor-pointer tracking-tight"
-          onClick={() => { setStep(1); setSeedSong(null); setRecommendations(null); }}
+          onClick={() => { setStep(1); setSeedSong(null); setRecommendations([]); }}
         >
           TAGTUNE
         </h1>
-        <div className="flex items-center gap-4 border border-[#e5e5e5] rounded-full px-4 py-1.5 shadow-sm">
-          {authStatus.user?.avatar && (
-            <img src={authStatus.user.avatar} alt="Avatar" className="w-8 h-8 rounded-full" />
+        <div className="flex items-center gap-4 border border-[#e5e5e5] rounded-full px-4 py-1.5">
+          {session.user?.image && (
+            <img src={session.user.image} alt="Avatar" className="w-8 h-8 rounded-full" />
           )}
           <button onClick={handleLogout} className="text-black hover:text-red-600 text-sm font-bold transition-colors uppercase">
             Logout
@@ -159,5 +141,3 @@ function App() {
     </div>
   );
 }
-
-export default App;

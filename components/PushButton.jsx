@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import api from '../api';
+import api from '@/lib/api';
 
 export default function PushButton({ playlistTitle, songUrls, onPushComplete }) {
   const [loading, setLoading] = useState(false);
