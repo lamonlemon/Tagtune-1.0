@@ -27,7 +27,7 @@ export default function PrivacyPolicyPage() {
 
           <p>
             Your privacy is important to us. It is TagTune's policy to respect your privacy regarding any information we may collect from you across our website,{' '}
-            <a href="https://tagtune.app" className="text-[#FF0000] hover:underline">https://tagtune.app</a>.
+            <a href="https://tag-tune.vercel.app" className="text-[#FF0000] hover:underline">https://tag-tune.vercel.app</a>.
             We don't collect any personal information beyond what is strictly necessary to provide a service to you. We collect it by fair and lawful means, with your knowledge and consent. We also let you know why we're collecting it and how it will be used.
           </p>
 

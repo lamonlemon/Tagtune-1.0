@@ -23,7 +23,7 @@ export default function TermsOfUsePage() {
       <main className="max-w-3xl mx-auto px-6 py-16 animate-fade-in">
         <h1 className="text-4xl font-black uppercase mb-2">Terms of Use</h1>
         <p className="text-sm text-gray-400 mb-12">
-          <a href="https://tagtune.app" className="hover:text-[#FF0000] transition-colors">https://tagtune.app</a>
+          <a href="https://tag-tune.vercel.app" className="hover:text-[#FF0000] transition-colors">https://tag-tune.vercel.app</a>
         </p>
 
         <div className="space-y-10 text-[15px] leading-relaxed text-gray-700">
