@@ -5,7 +5,9 @@ import { auth } from "@/auth";
 export async function POST(request) {
   try {
     const session = await auth();
+    console.log('[API playlist/push] session:', session);
     if (!session || !session.accessToken) {
+      console.log('Failing 401 because session or accessToken is missing');
       return NextResponse.json({ error: 'Not authenticated with Google' }, { status: 401 });
     }
 

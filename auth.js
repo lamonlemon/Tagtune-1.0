@@ -3,10 +3,12 @@ import Google from "next-auth/providers/google"
 import { supabase } from "@/lib/supabase"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      checks: ["none"],
       authorization: {
         params: {
           scope: "openid profile email https://www.googleapis.com/auth/youtube",
@@ -81,22 +83,57 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       // refresh token으로 갱신
       try {
+        let refreshTokenToUse = token.refreshToken;
+
+        if (!refreshTokenToUse) {
+          // Fallback: check Supabase user table just in case the JWT lost it
+          const { data: dbUser } = await supabase
+            .from('users')
+            .select('youtube_refresh_token')
+            .eq('google_id', token.sub)
+            .single();
+
+          if (dbUser && dbUser.youtube_refresh_token) {
+            refreshTokenToUse = dbUser.youtube_refresh_token;
+            token.refreshToken = refreshTokenToUse; 
+          }
+        }
+
+        if (!refreshTokenToUse) {
+          console.error('No refresh token available even after DB check');
+          token.error = 'NoRefreshToken';
+          return token;
+        }
+
         const response = await fetch("https://oauth2.googleapis.com/token", {
           method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: new URLSearchParams({
             client_id: process.env.GOOGLE_CLIENT_ID,
             client_secret: process.env.GOOGLE_CLIENT_SECRET,
             grant_type: "refresh_token",
-            refresh_token: token.refreshToken,
+            refresh_token: refreshTokenToUse,
           }),
         });
         const tokens = await response.json();
+        
+        if (!response.ok) {
+          console.error('Token refresh response not ok:', tokens);
+          token.error = 'RefreshTokenError';
+          return token;
+        }
+
         token.accessToken = tokens.access_token;
         token.expiresAt = Math.floor(Date.now() / 1000) + tokens.expires_in;
 
+        if (tokens.refresh_token) {
+          token.refreshToken = tokens.refresh_token; 
+        }
+
         // Supabase도 업데이트
         await supabase.from('users').update({
-          youtube_access_token: tokens.access_token
+          youtube_access_token: tokens.access_token,
+          ...(tokens.refresh_token && { youtube_refresh_token: tokens.refresh_token })
         }).eq('google_id', token.sub);
 
       } catch (e) {
@@ -109,6 +146,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       // Send properties to the client
       session.accessToken = token.accessToken;
+      session.error = token.error;
       if (token.dbId) {
         session.user.id = token.dbId;
       }
