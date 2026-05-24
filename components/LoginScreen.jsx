@@ -1,5 +1,6 @@
 import React from 'react';
 import { signIn } from 'next-auth/react';
+import Link from 'next/link';
 
 export default function LoginScreen() {
   const handleLogin = () => {
@@ -12,10 +13,10 @@ export default function LoginScreen() {
         <h1 className="text-5xl font-black tracking-tight text-black mb-12">
           TagTune
         </h1>
-        
+
         <button 
           onClick={handleLogin}
-          className="btn-primary w-full flex items-center justify-center gap-3 text-lg py-4 mb-4"
+          className="btn-primary w-full flex items-center justify-center gap-3 text-lg py-4 mb-8"
         >
           <svg className="w-6 h-6 bg-white rounded-full p-1" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -26,7 +27,18 @@ export default function LoginScreen() {
           </svg>
           Continue with Google
         </button>
+
+        <footer className="flex justify-center gap-4 text-sm text-gray-500 font-medium">
+          <Link href="/privacy-policy" className="hover:text-black transition-colors">
+            Privacy Policy
+          </Link>
+          <span>•</span>
+          <Link href="/terms-of-use" className="hover:text-black transition-colors">
+            Terms of Use
+          </Link>
+        </footer>
       </div>
     </div>
   );
 }
+
