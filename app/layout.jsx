@@ -1,5 +1,6 @@
 import './globals.css';
 import { NextAuthProvider } from '@/components/NextAuthProvider';
+import { Analytics } from '@vercel/analytics/next';
 
 export const metadata = {
   title: 'TagTune',
@@ -12,6 +13,7 @@ export default function RootLayout({ children }) {
       <body className="antialiased" suppressHydrationWarning>
         <NextAuthProvider>
           {children}
+          <Analytics />
         </NextAuthProvider>
       </body>
     </html>
