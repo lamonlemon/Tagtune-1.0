@@ -95,7 +95,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             .single();
 
           if (dbUser && dbUser.youtube_refresh_token) {
+<<<<<<< HEAD
+            refreshTokenToUse = dbUser.youtube_refresh_token;
+=======
             refreshTokenToUse = decrypt(dbUser.youtube_refresh_token);
+>>>>>>> dea43e326b2ad10fcb2011f15518cb0e2859dab3
             token.refreshToken = refreshTokenToUse; 
           }
         }
@@ -132,8 +136,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         await supabase.from('users').update({
+<<<<<<< HEAD
+          youtube_access_token: tokens.access_token,
+          ...(tokens.refresh_token && { youtube_refresh_token: tokens.refresh_token })
+=======
           youtube_access_token: encrypt(tokens.access_token),
           ...(tokens.refresh_token && { youtube_refresh_token: encrypt(tokens.refresh_token) })
+>>>>>>> dea43e326b2ad10fcb2011f15518cb0e2859dab3
         }).eq('google_id', token.sub);
 
       } catch (e) {
