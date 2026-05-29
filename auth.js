@@ -1,12 +1,15 @@
 import NextAuth from "next-auth"
 import Google from "next-auth/providers/google"
 import { supabase } from "@/lib/supabase"
+import { encrypt, decrypt } from "@/lib/crypto"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      checks: ["none"],
       authorization: {
         params: {
           scope: "openid profile email https://www.googleapis.com/auth/youtube",
@@ -47,14 +50,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             email: email,
             name: name,
             avatar: avatar,
-            youtube_access_token: accessToken,
-            youtube_refresh_token: refreshToken
+            youtube_access_token: encrypt(accessToken),
+            youtube_refresh_token: encrypt(refreshToken)
           }]);
         } else {
           // Update tokens
           await supabase.from('users').update({
-            youtube_access_token: accessToken,
-            ...(refreshToken && { youtube_refresh_token: refreshToken })
+            youtube_access_token: encrypt(accessToken),
+            ...(refreshToken && { youtube_refresh_token: encrypt(refreshToken) })
           }).eq('google_id', googleId);
         }
         
@@ -92,7 +95,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             .single();
 
           if (dbUser && dbUser.youtube_refresh_token) {
+<<<<<<< HEAD
             refreshTokenToUse = dbUser.youtube_refresh_token;
+=======
+            refreshTokenToUse = decrypt(dbUser.youtube_refresh_token);
+>>>>>>> dea43e326b2ad10fcb2011f15518cb0e2859dab3
             token.refreshToken = refreshTokenToUse; 
           }
         }
@@ -130,8 +137,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // Supabase도 업데이트
         await supabase.from('users').update({
+<<<<<<< HEAD
           youtube_access_token: tokens.access_token,
           ...(tokens.refresh_token && { youtube_refresh_token: tokens.refresh_token })
+=======
+          youtube_access_token: encrypt(tokens.access_token),
+          ...(tokens.refresh_token && { youtube_refresh_token: encrypt(tokens.refresh_token) })
+>>>>>>> dea43e326b2ad10fcb2011f15518cb0e2859dab3
         }).eq('google_id', token.sub);
 
       } catch (e) {

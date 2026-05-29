@@ -9,10 +9,12 @@ import URLInput from '@/components/URLInput';
 import SongCard from '@/components/SongCard';
 import TagSelector from '@/components/TagSelector';
 import PlaylistResult from '@/components/PlaylistResult';
+import VectorURLInput from '@/components/VectorURLInput';
 
 export default function App() {
   const { data: session, status } = useSession();
-  const [step, setStep] = useState(1); // 1: URL, 2: Tags, 3: Results
+  const [step, setStep] = useState(1); // 1: URL, 2: Tags, 3: Results, 4: Playlist
+  const [searchMode, setSearchMode] = useState('tags'); // 'tags' or 'sound'
   
   const [seedSong, setSeedSong] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
@@ -40,6 +42,12 @@ export default function App() {
   const handleSkipToTags = () => {
     setSeedSong(null);
     setStep(3);
+  };
+
+  const handleVectorResults = (results, seed) => {
+    setSeedSong(seed);
+    setRecommendations(results);
+    setStep(4);
   };
 
   const handleGenerate = async (tags) => {
@@ -96,7 +104,28 @@ export default function App() {
       <main className="max-w-6xl mx-auto relative z-10 w-full flex flex-col items-center flex-1 justify-center">
         
         {step === 1 && (
-          <URLInput onSongFound={handleSongFound} onSkipToTags={handleSkipToTags} />
+          <div className="w-full flex flex-col items-center gap-8">
+            <div className="flex gap-4 p-1 bg-gray-100 rounded-full border border-gray-200">
+              <button 
+                onClick={() => setSearchMode('tags')}
+                className={`px-6 py-2 rounded-full font-bold text-sm transition-colors ${searchMode === 'tags' ? 'bg-black text-white' : 'text-gray-500 hover:text-black'}`}
+              >
+                By Tags
+              </button>
+              <button 
+                onClick={() => setSearchMode('sound')}
+                className={`px-6 py-2 rounded-full font-bold text-sm transition-colors ${searchMode === 'sound' ? 'bg-black text-white' : 'text-gray-500 hover:text-black'}`}
+              >
+                By Sound
+              </button>
+            </div>
+            
+            {searchMode === 'tags' ? (
+              <URLInput onSongFound={handleSongFound} onSkipToTags={handleSkipToTags} />
+            ) : (
+              <VectorURLInput onResultsFound={handleVectorResults} />
+            )}
+          </div>
         )}
 
         {step === 2 && seedSong && (
