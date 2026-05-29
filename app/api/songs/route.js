@@ -26,10 +26,7 @@ export async function GET(request) {
         language, release_year, url,
         song_featuring ( artist_id ),
         song_producers ( artist_id ),
-        artists!songs_artist_id_fkey ( name ),
-        song_genres (
-          primary_genre_id, sub_genre_id, micro_genre_id
-        )
+        artists!songs_artist_id_fkey ( name )
       `)
       .or(`url.eq.${targetUrl},url.eq.${altTargetUrl}`)
       .single();
@@ -39,7 +36,14 @@ export async function GET(request) {
     }
 
     const is_cover = song.original_song_id !== null && song.original_song_id !== song.song_index;
-    const { primary_genre_id, sub_genre_id, micro_genre_id } = song.song_genres || {};
+
+    // Use RPC to get effective genre (inherits from original if it's a cover)
+    const { data: genreData } = await supabase.rpc('get_effective_genre', {
+      p_song_index: song.song_index
+    });
+    
+    const effective_genre = genreData && genreData.length > 0 ? genreData[0] : {};
+    const { primary_genre_id, sub_genre_id, micro_genre_id } = effective_genre;
 
     return NextResponse.json({
       song_index: song.song_index,

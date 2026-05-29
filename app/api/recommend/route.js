@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { auth } from "@/auth";
 
-// Fisher-Yates shuffle
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -27,7 +26,6 @@ export async function POST(request) {
       regenerate = false
     } = await request.json();
 
-    // Helper: check if array has values
     const has = (arr) => Array.isArray(arr) && arr.length > 0;
 
     const isFeatInner = has(primary_tags.feat_artist_ids);
@@ -45,21 +43,9 @@ export async function POST(request) {
         song_index, title, url, language, release_year, original_song_id, group_id, album_id, artist_id,
         artists!songs_artist_id_fkey ( artist_id, name ),
         song_featuring${isFeatInner ? '!inner' : ''} ( artist_id ),
-        song_producers${isProdInner ? '!inner' : ''} ( artist_id ),
-        song_genres${isGenreInner ? '!inner' : ''} (
-          primary_genre_id, sub_genre_id, micro_genre_id
-        )
+        song_producers${isProdInner ? '!inner' : ''} ( artist_id )
       `);
-      
-    if (has(primary_tags.primary_genre_ids)) {
-      query = query.in('song_genres.primary_genre_id', primary_tags.primary_genre_ids);
-    }
-    if (has(primary_tags.sub_genre_ids)) {
-      query = query.in('song_genres.sub_genre_id', primary_tags.sub_genre_ids);
-    }
-    if (has(primary_tags.micro_genre_ids)) {
-      query = query.in('song_genres.micro_genre_id', primary_tags.micro_genre_ids);
-    }
+    
     if (has(primary_tags.languages)) {
       query = query.in('language', primary_tags.languages);
     }
@@ -99,6 +85,35 @@ export async function POST(request) {
       return true;
     });
 
+    const genreMap = {};
+    await Promise.all(candidates.map(async (s) => {
+      const { data } = await supabase.rpc('get_effective_genre', {
+        p_song_index: s.song_index
+      });
+      if (data && data.length > 0) {
+        genreMap[s.song_index] = data[0];
+      }
+    }));
+
+    candidates = candidates.map(s => ({
+      ...s,
+      effective_genre: genreMap[s.song_index] || null
+    }));
+
+    // Post-RPC Primary Genre Filtering (Hard Filters)
+    if (isGenreInner) {
+      candidates = candidates.filter(s => {
+        const eg = s.effective_genre;
+        if (!eg) return false;
+        
+        if (has(primary_tags.primary_genre_ids) && !primary_tags.primary_genre_ids.includes(eg.primary_genre_id)) return false;
+        if (has(primary_tags.sub_genre_ids) && !primary_tags.sub_genre_ids.includes(eg.sub_genre_id)) return false;
+        if (has(primary_tags.micro_genre_ids) && !primary_tags.micro_genre_ids.includes(eg.micro_genre_id)) return false;
+        
+        return true;
+      });
+    }
+
     candidates = shuffle(candidates);
 
     let seedSong = null;
@@ -106,12 +121,21 @@ export async function POST(request) {
       const { data } = await supabase
         .from('songs')
         .select(`
-          song_index, language, release_year, group_id,
-          song_genres (primary_genre_id, sub_genre_id, micro_genre_id)
+          song_index, language, release_year, group_id
         `)
         .eq('song_index', seed_song_index)
         .single();
-      seedSong = data;
+      
+      if (data) {
+        // Resolve effective genre for seed song too
+        const { data: genreData } = await supabase.rpc('get_effective_genre', {
+          p_song_index: seed_song_index
+        });
+        seedSong = {
+          ...data,
+          effective_genre: (genreData && genreData.length > 0) ? genreData[0] : null
+        };
+      }
     }
 
     let scoredCandidates = candidates.map(s => {
@@ -139,15 +163,15 @@ export async function POST(request) {
         score += 25;
         reasons.push('Producer (User Tag)');
       }
-      if (has(secondary_tags.primary_genre_ids) && secondary_tags.primary_genre_ids.includes(s.song_genres?.primary_genre_id)) {
+      if (has(secondary_tags.primary_genre_ids) && secondary_tags.primary_genre_ids.includes(s.effective_genre?.primary_genre_id)) {
          score += 20;
          reasons.push('Genre (User Tag)');
       }
-      if (has(secondary_tags.sub_genre_ids) && secondary_tags.sub_genre_ids.includes(s.song_genres?.sub_genre_id)) {
+      if (has(secondary_tags.sub_genre_ids) && secondary_tags.sub_genre_ids.includes(s.effective_genre?.sub_genre_id)) {
          score += 25;
          reasons.push('Sub Genre (User Tag)');
       }
-      if (has(secondary_tags.micro_genre_ids) && secondary_tags.micro_genre_ids.includes(s.song_genres?.micro_genre_id)) {
+      if (has(secondary_tags.micro_genre_ids) && secondary_tags.micro_genre_ids.includes(s.effective_genre?.micro_genre_id)) {
          score += 30;
          reasons.push('Micro Genre (User Tag)');
       }
@@ -157,13 +181,13 @@ export async function POST(request) {
       }
 
       if (seedSong) {
-        if (seedSong.song_genres?.micro_genre_id && s.song_genres?.micro_genre_id === seedSong.song_genres.micro_genre_id) {
+        if (seedSong.effective_genre?.micro_genre_id && s.effective_genre?.micro_genre_id === seedSong.effective_genre.micro_genre_id) {
           score += 40;
           reasons.push('Same micro genre');
-        } else if (seedSong.song_genres?.sub_genre_id && s.song_genres?.sub_genre_id === seedSong.song_genres.sub_genre_id) {
+        } else if (seedSong.effective_genre?.sub_genre_id && s.effective_genre?.sub_genre_id === seedSong.effective_genre.sub_genre_id) {
           score += 25;
           reasons.push('Same sub genre');
-        } else if (seedSong.song_genres?.primary_genre_id && s.song_genres?.primary_genre_id === seedSong.song_genres.primary_genre_id) {
+        } else if (seedSong.effective_genre?.primary_genre_id && s.effective_genre?.primary_genre_id === seedSong.effective_genre.primary_genre_id) {
           score += 10;
           reasons.push('Same primary genre');
         }
@@ -202,10 +226,10 @@ export async function POST(request) {
         match_reasons: reasons,
         album_id: s.album_id,
         group_id: s.group_id,
-        primary_genre_id: s.song_genres?.primary_genre_id,
-        song_primary_genres: s.song_genres?.primary_genre_id,
-        song_sub_genres: s.song_genres?.sub_genre_id,
-        song_micro_genres: s.song_genres?.micro_genre_id,
+        primary_genre_id: s.effective_genre?.primary_genre_id,
+        song_primary_genres: s.effective_genre?.primary_genre_id,
+        song_sub_genres: s.effective_genre?.sub_genre_id,
+        song_micro_genres: s.effective_genre?.micro_genre_id,
         song_featuring: s.song_featuring,
         song_producers: s.song_producers,
       };
@@ -247,14 +271,19 @@ export async function POST(request) {
     const albumCounts = {};
     const finalSelection = [];
 
+    const primaryArtistIds = primary_tags.artist_ids || [];
+
     for (let song of poolForDedup) {
       if (finalSelection.length >= count) break;
       
+      const isPrimaryArtist = primaryArtistIds.includes(song.artist_id);
       const currentArtistCount = artistCounts[song.artist_name] || 0;
       const currentAlbumCount = song.album_id ? (albumCounts[song.album_id] || 0) : 0;
 
-      if (currentArtistCount >= 2) continue;
-      if (song.album_id && currentAlbumCount >= 2) continue;
+      // Only apply 2-song artist limit if it's NOT a primary tagged artist
+      if (!isPrimaryArtist && currentArtistCount >= 5) continue;
+      // Maintain album limit to avoid too much repetition from one specific record
+      if (song.album_id && currentAlbumCount >= 5) continue;
 
       artistCounts[song.artist_name] = currentArtistCount + 1;
       if (song.album_id) {
