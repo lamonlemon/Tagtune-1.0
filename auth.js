@@ -131,7 +131,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.refreshToken = tokens.refresh_token; 
         }
 
-        // Supabase도 업데이트
         await supabase.from('users').update({
           youtube_access_token: encrypt(tokens.access_token),
           ...(tokens.refresh_token && { youtube_refresh_token: encrypt(tokens.refresh_token) })
