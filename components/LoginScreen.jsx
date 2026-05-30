@@ -14,9 +14,9 @@ export default function LoginScreen() {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             {/* Logo */}
-            <span className="w-8 h-8 rounded-lg bg-red-600 flex items-center justify-center text-white font-black tracking-tighter text-lg shadow-md shadow-red-500/20">
-              T
-            </span>
+            <svg className="w-8 h-8 text-red-600 fill-current" viewBox="0 0 18 18">
+              <path d="M3.166 3.161a.75.75 0 011.06 1.06 6.753 6.753 0 000 9.548.75.75 0 01-1.06 1.06 8.253 8.253 0 010-11.668Zm10.607 0a.75.75 0 011.061 0 8.251 8.251 0 010 11.668.75.75 0 01-1.06-1.06 6.752 6.752 0 000-9.547.75.75 0 010-1.06Zm-2.122 2.126a.75.75 0 011.06 0 5.25 5.25 0 010 7.424.75.75 0 01-1.06-1.06 3.75 3.75 0 000-5.303.75.75 0 010-1.06Zm-6.363-.004a.75.75 0 111.06 1.06 3.751 3.751 0 00-.813 4.088c.189.454.466.867.814 1.216a.75.75 0 01-1.06 1.06A5.253 5.253 0 013.75 8.995a5.252 5.252 0 011.538-3.712Zm5.962 3.712-3.75 2.25v-4.5l3.75 2.25Z" />
+            </svg>
             <span className="text-xl font-black tracking-tight text-slate-950">
               TAGTUNE
             </span>
@@ -25,7 +25,6 @@ export default function LoginScreen() {
           <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
             <a href="#features" className="hover:text-red-600 transition-colors">Features</a>
             <a href="#how-it-works" className="hover:text-red-600 transition-colors">How It Works</a>
-            <a href="#privacy-disclosure" className="hover:text-red-600 transition-colors">YouTube Integration</a>
             <a href="#faq" className="hover:text-red-600 transition-colors">FAQ</a>
           </nav>
 
@@ -47,16 +46,10 @@ export default function LoginScreen() {
       {/* Hero Section */}
       <section className="relative pt-12 pb-20 px-4 sm:px-8 bg-gradient-to-b from-white to-slate-50 border-b border-slate-200">
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 rounded-full border border-red-200 text-red-700 text-xs font-bold uppercase tracking-wider mb-6 animate-pulse">
-            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
-            </svg>
-            Google OAuth Verified App
-          </div>
 
           <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-slate-950 leading-[1.1] mb-6">
             Take Control of Your <br className="hidden sm:inline" />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-indigo-700">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#ff1a47] to-[#fe0000]">
               YouTube Music
             </span> Playlists
           </h1>
@@ -110,109 +103,12 @@ export default function LoginScreen() {
         </div>
 
         {/* Visual Mockup Container representing the app's capability */}
-        <div className="max-w-5xl mx-auto mt-16 bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-200/50 p-4 sm:p-6 overflow-hidden">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-4 mb-6">
-            <div className="flex gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-slate-200"></span>
-              <span className="w-3 h-3 rounded-full bg-slate-200"></span>
-              <span className="w-3 h-3 rounded-full bg-slate-200"></span>
-            </div>
-            <div className="w-full max-w-sm mx-auto bg-slate-100 rounded-md text-center py-1 text-xs text-slate-400 font-mono tracking-tight truncate">
-              https://tag-tune.vercel.app/dashboard
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-            <div className="md:col-span-4 space-y-6">
-              <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Step 1: Input Song URL</span>
-                <div className="mt-2 flex gap-2">
-                  <div className="bg-white border border-slate-200 rounded-full px-3 py-1.5 text-xs text-slate-500 truncate flex-1 font-mono">
-                    music.youtube.com/watch?v=s8...
-                  </div>
-                  <div className="bg-slate-200 rounded-full px-3 py-1.5 text-xs text-slate-500 font-bold">
-                    Seed
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl space-y-3">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Step 2: Configure Filter Tags</span>
-                
-                <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Primary Genre</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    <span className="px-2 py-0.5 bg-red-600 text-white rounded text-[11px] font-bold">J-Pop</span>
-                    <span className="px-2 py-0.5 bg-slate-200 text-slate-600 rounded text-[11px]">K-Pop</span>
-                    <span className="px-2 py-0.5 bg-slate-200 text-slate-600 rounded text-[11px]">Vocaloid</span>
-                  </div>
-                </div>
-
-                <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Language</span>
-                  <span className="inline-block px-2.5 py-0.5 border border-slate-300 rounded-full text-slate-700 text-xs font-semibold">
-                    Japanese
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Vocal Type</span>
-                  <span className="inline-block px-2.5 py-0.5 border border-slate-300 rounded-full text-slate-700 text-xs font-semibold">
-                    Cover Songs Only
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="md:col-span-8 space-y-4">
-              <div className="flex justify-between items-center bg-slate-50 p-4 border border-slate-100 rounded-xl">
-                <div>
-                  <h4 className="text-sm font-bold text-slate-800">Generated Tag-Match Recommendations</h4>
-                  <p className="text-xs text-slate-400">Matches found in database: 18 similar tracks</p>
-                </div>
-                <button className="bg-red-600 text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-red-500/10">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Push to YouTube
-                </button>
-              </div>
-
-              {/* Seed Song Card Mockup */}
-              <div className="flex items-center gap-3 p-3 border border-slate-200 rounded-xl bg-white shadow-sm">
-                <div className="w-12 h-12 bg-slate-200 rounded-lg flex items-center justify-center text-slate-400 font-bold text-xs">IMG</div>
-                <div className="flex-1">
-                  <h5 className="text-xs font-black tracking-tight text-slate-900">Dry Flower (Cover)</h5>
-                  <p className="text-[11px] text-slate-500">Kobasolo feat. Harutya</p>
-                  <div className="mt-1.5 flex gap-1 items-center">
-                    <span className="text-[9px] bg-indigo-50 border border-indigo-200 text-indigo-700 px-1.5 py-0.5 rounded font-bold">Micro: Acoustic J-Pop</span>
-                    <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">Japanese</span>
-                    <span className="text-[9px] bg-red-50 text-red-700 px-1.5 py-0.5 rounded font-bold">Cover</span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs font-black text-indigo-600 block">Match Score</span>
-                  <span className="text-[10px] text-slate-400 font-semibold block">95pts / Perfect Vibe</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 p-3 border border-slate-100 rounded-xl bg-white opacity-80">
-                <div className="w-12 h-12 bg-slate-200 rounded-lg flex items-center justify-center text-slate-400 text-xs">IMG</div>
-                <div className="flex-1">
-                  <h5 className="text-xs font-black tracking-tight text-slate-800">Lemon (Acoustic Cover)</h5>
-                  <p className="text-[11px] text-slate-500">Kobie feat. Risa</p>
-                  <div className="mt-1.5 flex gap-1 items-center">
-                    <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">Micro: Acoustic J-Pop</span>
-                    <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">Japanese</span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs font-black text-indigo-500 block">Match Score</span>
-                  <span className="text-[10px] text-slate-400 block">85pts</span>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className="max-w-5xl mx-auto mt-16 overflow-hidden rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50 bg-white">
+          <img 
+            src="/assets/visual_mockup.png" 
+            alt="TagTune App Interface Mockup" 
+            className="w-full h-auto object-cover block"
+          />
         </div>
       </section>
 
@@ -312,48 +208,6 @@ export default function LoginScreen() {
         </div>
       </section>
 
-      {/* YouTube Integration & Scope Consent Disclosure */}
-      <section id="privacy-disclosure" className="py-20 px-4 sm:px-8 max-w-4xl mx-auto">
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-10 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-600 border border-red-200">
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19.828 8.828a4 4 0 00-5.656 0l-1.06 1.06-1.06-1.06a4 4 0 00-5.656 5.656l1.06 1.06 5.656 5.656 5.656-5.656 1.06-1.06a4 4 0 000-5.656z" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-slate-950 uppercase tracking-tight">Security &amp; Google Verification</h2>
-              <p className="text-xs text-slate-500 font-semibold">How we keep your YouTube credentials safe</p>
-            </div>
-          </div>
-
-          <div className="space-y-4 text-sm text-slate-600 leading-relaxed">
-            <p>
-              TagTune requires integration with Google Services via the **YouTube Data API** to function. During sign-in, you will be prompted to grant the following authorization:
-            </p>
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg font-mono text-xs text-slate-700 space-y-1">
-              <span className="font-bold text-slate-900 block mb-1">Requested OAuth Scopes:</span>
-              <div>• openid, profile, email — For account creation and secure session login.</div>
-              <div>• https://www.googleapis.com/auth/youtube — To write playlists to your YouTube library.</div>
-            </div>
-            <p>
-              <strong className="text-slate-900">What TagTune does with this access:</strong> We use this permission strictly to create new private playlists (e.g. "TagTune - Mix 2026") and populate them with the matching songs generated by your searches. 
-            </p>
-            <p>
-              <strong className="text-slate-900">What we NEVER do:</strong> We do not view, edit, or delete your existing playlists. We do not read your browsing history, like or subscribe to channels, or interact with other content on your account.
-            </p>
-            <p>
-              <strong className="text-slate-900">Data Protection:</strong> Your OAuth tokens are encrypted at rest using advanced cryptographic algorithms (AES-256-CBC) before being stored in our secure database. They are only transmitted over HTTPS directly to Google endpoints.
-            </p>
-            <p>
-              You can revoke TagTune’s access to your YouTube library at any time via your{' '}
-              <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" className="text-red-600 font-bold hover:underline">
-                Google Security Settings Page
-              </a>.
-            </p>
-          </div>
-        </div>
-      </section>
 
       {/* FAQ Section */}
       <section id="faq" className="py-20 bg-slate-50 border-t border-slate-200 px-4 sm:px-8">
@@ -375,13 +229,6 @@ export default function LoginScreen() {
               <h4 className="text-base font-bold text-slate-950 mb-2">Are my private playlists visible to others?</h4>
               <p className="text-sm text-slate-600 leading-relaxed">
                 No. Any playlist created by TagTune is initialized with "Private" visibility settings on YouTube by default. You are the only person who can view it, unless you explicitly decide to share it via your YouTube client.
-              </p>
-            </div>
-
-            <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
-              <h4 className="text-base font-bold text-slate-950 mb-2">Does TagTune cost money to use?</h4>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                No, TagTune is a completely free, open-source tool built to solve YouTube Music recommendation loops. We do not sell your data, run ads, or charge subscription fees.
               </p>
             </div>
           </div>

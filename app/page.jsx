@@ -82,14 +82,18 @@ export default function App() {
 
   return (
     <div className="min-h-screen relative font-sans overflow-x-hidden p-4 md:p-8 bg-white text-black flex-1">
-      {/* Header */}
       <header className="flex justify-between items-center max-w-6xl mx-auto z-20 relative mb-12">
-        <h1 
-          className="text-3xl font-black cursor-pointer tracking-tight"
+        <div 
+          className="flex items-center gap-2.5 cursor-pointer"
           onClick={() => { setStep(1); setSeedSong(null); setRecommendations([]); }}
         >
-          TAGTUNE
-        </h1>
+          <svg className="w-8 h-8 text-red-600 fill-current" viewBox="0 0 18 18">
+            <path d="M3.166 3.161a.75.75 0 011.06 1.06 6.753 6.753 0 000 9.548.75.75 0 01-1.06 1.06 8.253 8.253 0 010-11.668Zm10.607 0a.75.75 0 011.061 0 8.251 8.251 0 010 11.668.75.75 0 01-1.06-1.06 6.752 6.752 0 000-9.547.75.75 0 010-1.06Zm-2.122 2.126a.75.75 0 011.06 0 5.25 5.25 0 010 7.424.75.75 0 01-1.06-1.06 3.75 3.75 0 000-5.303.75.75 0 010-1.06Zm-6.363-.004a.75.75 0 111.06 1.06 3.751 3.751 0 00-.813 4.088c.189.454.466.867.814 1.216a.75.75 0 01-1.06 1.06A5.253 5.253 0 013.75 8.995a5.252 5.252 0 011.538-3.712Zm5.962 3.712-3.75 2.25v-4.5l3.75 2.25Z" />
+          </svg>
+          <span className="text-3xl font-black tracking-tight">
+            TAGTUNE
+          </span>
+        </div>
         <div className="flex items-center gap-4 border border-[#e5e5e5] rounded-full px-4 py-1.5">
           {session.user?.image && (
             <img src={session.user.image} alt="Avatar" className="w-8 h-8 rounded-full" />

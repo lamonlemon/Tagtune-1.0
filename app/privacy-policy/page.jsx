@@ -10,8 +10,11 @@ export default function PrivacyPolicyPage() {
     <div className="min-h-screen bg-white text-black font-sans">
       {/* Header */}
       <header className="border-b border-[#e5e5e5] px-6 py-4 flex items-center justify-between max-w-5xl mx-auto">
-        <Link href="/" className="text-2xl font-black tracking-tight hover:text-[#FF0000] transition-colors">
-          TAGTUNE
+        <Link href="/" className="flex items-center gap-2 text-2xl font-black tracking-tight hover:text-[#FF0000] transition-colors">
+          <svg className="w-6 h-6 text-red-600 fill-current" viewBox="0 0 18 18">
+            <path d="M3.166 3.161a.75.75 0 011.06 1.06 6.753 6.753 0 000 9.548.75.75 0 01-1.06 1.06 8.253 8.253 0 010-11.668Zm10.607 0a.75.75 0 011.061 0 8.251 8.251 0 010 11.668.75.75 0 01-1.06-1.06 6.752 6.752 0 000-9.547.75.75 0 010-1.06Zm-2.122 2.126a.75.75 0 011.06 0 5.25 5.25 0 010 7.424.75.75 0 01-1.06-1.06 3.75 3.75 0 000-5.303.75.75 0 010-1.06Zm-6.363-.004a.75.75 0 111.06 1.06 3.751 3.751 0 00-.813 4.088c.189.454.466.867.814 1.216a.75.75 0 01-1.06 1.06A5.253 5.253 0 013.75 8.995a5.252 5.252 0 011.538-3.712Zm5.962 3.712-3.75 2.25v-4.5l3.75 2.25Z" />
+          </svg>
+          <span>TAGTUNE</span>
         </Link>
         <nav className="flex gap-6 text-sm font-semibold text-gray-500">
           <Link href="/terms-of-use" className="hover:text-black transition-colors">Terms of Use</Link>
