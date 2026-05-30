@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import api from '@/lib/api';
 
-export default function VectorURLInput({ onResultsFound, currentUrl = '' }) {
+export default function VectorURLInput({ onSongFound, currentUrl = '' }) {
   const [url, setUrl] = useState(currentUrl);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -19,7 +19,7 @@ export default function VectorURLInput({ onResultsFound, currentUrl = '' }) {
     }
   };
 
-  const handleMakePlaylist = async (e) => {
+  const handleLookup = async (e) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -36,13 +36,7 @@ export default function VectorURLInput({ onResultsFound, currentUrl = '' }) {
       const seedResponse = await api.get(`/api/songs?video_id=${videoId}`);
       const seedSong = { ...seedResponse.data, fullUrl: url };
 
-      // 2. Fetch recommendations from vector similarity
-      const resultsResponse = await api.post('/api/songs/similar', {
-        video_id: videoId,
-        count: 20
-      });
-
-      onResultsFound(resultsResponse.data, seedSong);
+      onSongFound(seedSong);
     } catch (err) {
       console.error(err);
       if (err.response?.status === 404) {
@@ -60,7 +54,7 @@ export default function VectorURLInput({ onResultsFound, currentUrl = '' }) {
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col items-center animate-fade-in relative z-10">
 
-      <form onSubmit={handleMakePlaylist} className="w-full flex flex-col sm:flex-row gap-4 items-center justify-center relative">
+      <form onSubmit={handleLookup} className="w-full flex flex-col sm:flex-row gap-4 items-center justify-center relative">
         <div className="relative w-full sm:w-[500px]">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <svg viewBox="0 0 24 24" className="w-6 h-6 fill-[#FF0000]">

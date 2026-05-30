@@ -10,12 +10,13 @@ import SongCard from '@/components/SongCard';
 import TagSelector from '@/components/TagSelector';
 import PlaylistResult from '@/components/PlaylistResult';
 import VectorURLInput from '@/components/VectorURLInput';
+import VectorFilterSelector from '@/components/VectorFilterSelector';
 
 export default function App() {
   const { data: session, status } = useSession();
-  const [step, setStep] = useState(1); // 1: URL, 2: Tags, 3: Results, 4: Playlist
+  const [step, setStep] = useState(1); // 1: URL, 2: Tags, 3: Results, 4: Playlist, 5: Vector Filter
   const [searchMode, setSearchMode] = useState('tags'); // 'tags' or 'sound'
-  
+
   const [seedSong, setSeedSong] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -44,10 +45,41 @@ export default function App() {
     setStep(3);
   };
 
-  const handleVectorResults = (results, seed) => {
-    setSeedSong(seed);
-    setRecommendations(results);
-    setStep(4);
+  const handleVectorSongFound = (songData) => {
+    setSeedSong(songData);
+    setStep(5);
+  };
+
+  const extractVideoId = (inputUrl) => {
+    try {
+      const parsedUrl = new URL(inputUrl);
+      let v = parsedUrl.searchParams.get('v');
+      if (!v && parsedUrl.hostname === 'youtu.be') {
+        v = parsedUrl.pathname.slice(1);
+      }
+      return v || inputUrl;
+    } catch {
+      return inputUrl;
+    }
+  };
+
+  const handleVectorGenerate = async ({ primary_tags, count }) => {
+    setIsGenerating(true);
+    try {
+      const videoId = extractVideoId(seedSong.url || seedSong.fullUrl);
+      const res = await api.post('/api/songs/similar', {
+        video_id: videoId,
+        count,
+        primary_tags
+      });
+      setRecommendations(res.data);
+      setStep(4);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to generate similarity recommendations.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleGenerate = async (tags) => {
@@ -71,7 +103,7 @@ export default function App() {
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">
-         <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
+        <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
       </div>
     );
   }
@@ -83,7 +115,7 @@ export default function App() {
   return (
     <div className="min-h-screen relative font-sans overflow-x-hidden p-4 md:p-8 bg-white text-black flex-1">
       <header className="flex justify-between items-center max-w-6xl mx-auto z-20 relative mb-12">
-        <div 
+        <div
           className="flex items-center gap-2.5 cursor-pointer"
           onClick={() => { setStep(1); setSeedSong(null); setRecommendations([]); }}
         >
@@ -106,28 +138,28 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="max-w-6xl mx-auto relative z-10 w-full flex flex-col items-center flex-1 justify-center">
-        
+
         {step === 1 && (
           <div className="w-full flex flex-col items-center gap-8">
             <div className="flex gap-4 p-1 bg-gray-100 rounded-full border border-gray-200">
-              <button 
+              <button
                 onClick={() => setSearchMode('tags')}
                 className={`px-6 py-2 rounded-full font-bold text-sm transition-colors ${searchMode === 'tags' ? 'bg-black text-white' : 'text-gray-500 hover:text-black'}`}
               >
                 By Tags
               </button>
-              <button 
+              <button
                 onClick={() => setSearchMode('sound')}
                 className={`px-6 py-2 rounded-full font-bold text-sm transition-colors ${searchMode === 'sound' ? 'bg-black text-white' : 'text-gray-500 hover:text-black'}`}
               >
                 By Sound
               </button>
             </div>
-            
+
             {searchMode === 'tags' ? (
               <URLInput onSongFound={handleSongFound} onSkipToTags={handleSkipToTags} />
             ) : (
-              <VectorURLInput onResultsFound={handleVectorResults} />
+              <VectorURLInput onSongFound={handleVectorSongFound} />
             )}
           </div>
         )}
@@ -137,7 +169,7 @@ export default function App() {
             <URLInput currentUrl={seedSong.fullUrl} />
             <SongCard song={seedSong} tagsData={tags} />
             <div className="mt-12">
-               <button onClick={() => setStep(3)} className="btn-primary">CONFIRM SONG</button>
+              <button onClick={() => setStep(3)} className="btn-primary">CONFIRM SONG</button>
             </div>
           </div>
         )}
@@ -160,6 +192,18 @@ export default function App() {
             setSeedSong(null);
             setRecommendations([]);
           }} />
+        )}
+
+        {step === 5 && seedSong && (
+          <VectorFilterSelector 
+            seedSong={seedSong}
+            tagsData={tags}
+            onGenerate={handleVectorGenerate}
+            onBack={() => {
+              setStep(1);
+              setSeedSong(null);
+            }}
+          />
         )}
 
         {/* Global Loading Overlay for Generate */}

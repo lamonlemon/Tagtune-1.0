@@ -9,7 +9,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { video_id, count = 20 } = await request.json();
+    const { video_id, count = 20, primary_tags = {} } = await request.json();
 
     if (!video_id) {
       return NextResponse.json({ error: 'Missing video_id' }, { status: 400 });
@@ -47,7 +47,21 @@ export async function POST(request) {
        return NextResponse.json({ error: 'Vectors not found for this song.' }, { status: 404 });
     }
 
-    const matchCount = count * 3;
+    const has = (arr) => Array.isArray(arr) && arr.length > 0;
+    const allGenreIds = [
+      ...(primary_tags.primary_genre_ids || []),
+      ...(primary_tags.sub_genre_ids || []),
+      ...(primary_tags.micro_genre_ids || [])
+    ];
+    const isGenreInner = allGenreIds.length > 0;
+
+    const hasFilters = has(primary_tags.languages) || 
+                       has(primary_tags.artist_ids) || 
+                       has(primary_tags.group_ids) ||
+                       isGenreInner ||
+                       primary_tags.cover_filter;
+
+    const matchCount = hasFilters ? 300 : count * 3;
 
     // 3. Call RPCs
     const [artistResponse, audioResponse] = await Promise.all([
@@ -100,14 +114,14 @@ export async function POST(request) {
     }
 
     // Compute combined score and sort
-    const candidateIndexes = Object.values(combinedScores)
+    const sortedCandidates = Object.values(combinedScores)
       .map(candidate => ({
         song_index: candidate.song_index,
         score: 0.5 * candidate.artist_similarity + 0.5 * candidate.audio_similarity
       }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, count)
-      .map(c => c.song_index);
+      .sort((a, b) => b.score - a.score);
+
+    const candidateIndexes = sortedCandidates.map(c => c.song_index);
 
     // Fetch seed song effective genre
     const { data: seedGenreData } = await supabase.rpc('get_effective_genre', {
@@ -155,23 +169,94 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Database error fetching details' }, { status: 500 });
     }
 
-    // 6. Fetch effective genres and map results
-    const genreMap = {};
-    await Promise.all(candidatesDetails.map(async (s) => {
-      const { data } = await supabase.rpc('get_effective_genre', {
-        p_song_index: s.song_index
+    // Phase 1: Filter candidates by language, artist, group, covers (available on songs table)
+    let filtered = candidatesDetails || [];
+
+    if (has(primary_tags.languages)) {
+      filtered = filtered.filter(s => primary_tags.languages.includes(s.language));
+    }
+    
+    if (has(primary_tags.artist_ids)) {
+      filtered = filtered.filter(s => primary_tags.artist_ids.includes(s.artist_id));
+    }
+
+    if (has(primary_tags.feat_artist_ids)) {
+      filtered = filtered.filter(s => s.song_featuring && s.song_featuring.some(f => primary_tags.feat_artist_ids.includes(f.artist_id)));
+    }
+
+    if (has(primary_tags.prod_artist_ids)) {
+      filtered = filtered.filter(s => s.song_producers && s.song_producers.some(p => primary_tags.prod_artist_ids.includes(p.artist_id)));
+    }
+
+    if (has(primary_tags.group_ids)) {
+      filtered = filtered.filter(s => primary_tags.group_ids.includes(s.group_id));
+    }
+
+    if (primary_tags.cover_filter === 'cover') {
+      filtered = filtered.filter(s => {
+        const isCover = s.original_song_id !== null && s.original_song_id !== s.song_index;
+        return isCover;
       });
-      if (data && data.length > 0) {
-        genreMap[s.song_index] = data[0];
-      }
-    }));
+    } else if (primary_tags.cover_filter === 'original') {
+      filtered = filtered.filter(s => {
+        const isCover = s.original_song_id !== null && s.original_song_id !== s.song_index;
+        return !isCover;
+      });
+    }
+
+    // Phase 2: Filter by genre if genre filters are active
+    const genreMap = {};
+    if (isGenreInner) {
+      const candidatesForGenreFetch = filtered.slice(0, 150);
+
+      await Promise.all(candidatesForGenreFetch.map(async (s) => {
+        const { data } = await supabase.rpc('get_effective_genre', {
+          p_song_index: s.song_index
+        });
+        if (data && data.length > 0) {
+          genreMap[s.song_index] = data[0];
+        }
+      }));
+
+      filtered = candidatesForGenreFetch.filter(s => {
+        const eg = genreMap[s.song_index];
+        if (!eg) return false;
+        
+        if (has(primary_tags.primary_genre_ids) && !primary_tags.primary_genre_ids.includes(eg.primary_genre_id)) return false;
+        if (has(primary_tags.sub_genre_ids) && !primary_tags.sub_genre_ids.includes(eg.sub_genre_id)) return false;
+        if (has(primary_tags.micro_genre_ids) && !primary_tags.micro_genre_ids.includes(eg.micro_genre_id)) return false;
+        
+        return true;
+      });
+    }
+
+    // Sort survivors by original vector similarity score rank
+    filtered.sort((a, b) => {
+      const idxA = candidateIndexes.indexOf(a.song_index);
+      const idxB = candidateIndexes.indexOf(b.song_index);
+      return idxA - idxB;
+    });
+
+    // Slice to the requested count
+    const selectedCandidates = filtered.slice(0, count);
+
+    // Fetch genres for selected candidates if we haven't already (needed for frontend tags render)
+    if (!isGenreInner) {
+      await Promise.all(selectedCandidates.map(async (s) => {
+        const { data } = await supabase.rpc('get_effective_genre', {
+          p_song_index: s.song_index
+        });
+        if (data && data.length > 0) {
+          genreMap[s.song_index] = data[0];
+        }
+      }));
+    }
 
     // Map to final format expected by PlaylistResult.jsx
-    const finalSelection = candidatesDetails.map(s => {
+    const finalSelection = selectedCandidates.map(s => {
       const isCover = s.original_song_id !== null && s.original_song_id !== s.song_index;
       const effective_genre = genreMap[s.song_index];
       
-      // We need to keep the original ordering based on the combined score
       const combinedCandidate = candidateIndexes.findIndex(id => id === s.song_index);
 
       return {
@@ -182,7 +267,7 @@ export async function POST(request) {
         url: s.url,
         language: s.language,
         is_cover: isCover,
-        score: combinedCandidate !== -1 ? (candidateIndexes.length - combinedCandidate) * 10 : 0, // Mock score for frontend sorting
+        score: combinedCandidate !== -1 ? (candidateIndexes.length - combinedCandidate) * 10 : 0, 
         match_reasons: ["Vector similarity"],
         album_id: s.album_id,
         group_id: s.group_id,
@@ -195,7 +280,7 @@ export async function POST(request) {
       };
     });
 
-    // Restore sorted order
+    // Restore sorted order by score descending
     finalSelection.sort((a, b) => b.score - a.score);
 
     return NextResponse.json([formattedSeedSong, ...finalSelection]);
